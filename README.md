@@ -11,31 +11,16 @@
 In a 3D Cartesian coordinate system, you can rotate a vector around the x-axis, y-axis, or z-axis. The rotation matrices for these basic rotations are:
 
 #### Rotation around the x-axis by angle \( \theta \):
-\[
-\begin{bmatrix}
-1 & 0 & 0 \\
-0 & \cos(\theta) & -\sin(\theta) \\
-0 & \sin(\theta) & \cos(\theta)
-\end{bmatrix}
-\]
+![image](https://github.com/SteveJustin1963/3D-vector-rotation/assets/58069246/e0a99033-cdbe-4ed8-8f84-e578d44f42a5)
+
 
 #### Rotation around the y-axis by angle \( \theta \):
-\[
-\begin{bmatrix}
-\cos(\theta) & 0 & \sin(\theta) \\
-0 & 1 & 0 \\
--\sin(\theta) & 0 & \cos(\theta)
-\end{bmatrix}
-\]
+![image](https://github.com/SteveJustin1963/3D-vector-rotation/assets/58069246/e4d07f38-0f10-4d46-b692-01f8f20681fc)
+
 
 #### Rotation around the z-axis by angle \( \theta \):
-\[
-\begin{bmatrix}
-\cos(\theta) & -\sin(\theta) & 0 \\
-\sin(\theta) & \cos(\theta) & 0 \\
-0 & 0 & 1
-\end{bmatrix}
-\]
+![image](https://github.com/SteveJustin1963/3D-vector-rotation/assets/58069246/242701bd-e834-4329-b97c-ee8de4cc0924)
+
 
 For more advanced rotations, you can combine these basic matrices or use other methods like Euler angles, quaternions, or axis-angle representations.
 
@@ -44,19 +29,18 @@ For more advanced rotations, you can combine these basic matrices or use other m
 Fixed-point arithmetic is often suitable for scenarios where floating-point calculations are not feasible, like in embedded systems. In fixed-point arithmetic, real numbers are approximated using integers and are interpreted as fractions.
 
 #### Fixed-Point Representation
-In a 16-bit fixed-point format, 15 bits are used for the fractional part and one bit for the sign, effectively allowing you to represent numbers as \( \frac{X}{2^{15}} \), where \( X \) is a 16-bit integer spanning from -32,768 to 32,767. This format limits the precision and range of representable numbers.
+In a 16-bit fixed-point format, 15 bits are used for the fractional part and one bit for the sign, effectively allowing you to represent numbers as X/2^15, where X is a 16-bit integer spanning from -32,768 to 32,767. This format limits the precision and range of representable numbers.
 
 #### Fixed-Point Operations
 Fixed-point arithmetic employs bit-shifting to maintain numerical integrity. For example, in 16-bit fixed-point multiplication, operands are usually shifted before and after the multiplication to ensure correct fixed-point representation.
 
 #### Applying Fixed-Point Arithmetic to 3D Vector Rotation
-When rotating a 3D vector using fixed-point arithmetic, all vectors and matrices must be represented in the fixed-point format. Given a 3D vector \( \mathbf{v} \) and a rotation matrix \( \mathbf{R} \), the rotated vector \( \mathbf{v'} \) is calculated as \( \mathbf{v'} = \mathbf{R} \mathbf{v} \). In fixed-point arithmetic, each element \( v'_{i} \) of \( \mathbf{v'} \) is:
+When rotating a 3D vector using fixed-point arithmetic, all vectors and matrices must be represented in the fixed-point format. Given a 3D vector **v** and a rotation matrix **R**, the rotated vector **v'** is calculated as **v'= Rv**. In fixed-point arithmetic, each element **v'i** is:
 
-\[
-v'_{i} = \sum_{j} (R_{ij} \times v_{j}) >> 15
-\]
+![image](https://github.com/SteveJustin1963/3D-vector-rotation/assets/58069246/40ad599d-d6b0-48a9-bc7f-eb1853ce1f2f)
 
-Here, \( >> 15 \) is a 15-bit right shift that brings the result back to the correct fixed-point representation.
+
+Here, **>> 15**  is a 15-bit right shift that brings the result back to the correct fixed-point representation.
 
 #### Forth-83 Code Sample
 A Forth word called `16bit-multiply` can be used for the fixed-point multiplication, performing bit-shifting as needed.
