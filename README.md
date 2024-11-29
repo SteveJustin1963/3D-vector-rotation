@@ -117,3 +117,39 @@ When rotating a 3D vector using fixed-point arithmetic, all vectors and matrices
    r 0 ? . r 1 ? . r 2 ? . ;
 
    ```
+
+
+## MATLAB version of the 3D vector rotation code that mirrors our MINT2 implementation.
+
+`3DVR.m`
+
+This MATLAB implementation provides:
+
+1. Core Functions:
+- `rotate_floating`: Standard floating-point rotation
+- `rotate_fixed`: Fixed-point rotation (8.8 format)
+- `fixed_multiply`: Simulates 16-bit fixed-point multiplication
+- `generate_sin_table`: Creates sine lookup table
+- `get_sin_fixed`/`get_cos_fixed`: Fixed-point trigonometry
+
+2. Test Functions:
+- `test_3d_rotation`: Basic comparison test
+- `test_fixed_point_accuracy`: Tests accuracy at various angles
+- `plot_rotation_comparison`: Visual comparison
+
+3. Features:
+- Simulates MINT2's fixed-point arithmetic
+- Includes lookup tables like MINT2 version
+- Provides accuracy analysis
+- Visual comparison capabilities
+
+To use:
+1. Save as `test_3d_rotation.m`
+2. Run in MATLAB:
+
+```matlab
+test_3d_rotation()           % Basic test
+test_fixed_point_accuracy()  % Accuracy analysis
+plot_rotation_comparison()   % Visual comparison
+```
+
