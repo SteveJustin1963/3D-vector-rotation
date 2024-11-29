@@ -40,85 +40,80 @@ When rotating a 3D vector using fixed-point arithmetic, all vectors and matrices
 ![image](https://github.com/SteveJustin1963/3D-vector-rotation/assets/58069246/40ad599d-d6b0-48a9-bc7f-eb1853ce1f2f)
 
 
-Here, **>> 15**  is a 15-bit right shift that brings the result back to the correct fixed-point representation.
-
-#### Forth-83 Code Sample
-A Forth word called `16bit-multiply` can be used for the fixed-point multiplication, performing bit-shifting as needed.
+ 
 
 
 
-
-## code
-The Forth-83 code snippet provided is an implementation of matrix-vector multiplication for 3x3 matrices and 3D vectors. It also allocates space for a 3D vector and a 3x3 rotation matrix, and it contains an example to initialize these data structures and perform the multiplication. The code adheres to the given constraints, namely 16-bit integers and fixed-point arithmetic. Below is a breakdown of the code:
-
-### 16-bit fixed-point multiplication (`16bit-multiply`)
-The word `16bit-multiply` takes two fixed-point numbers, multiplies them, and shifts the result to maintain a fixed-point representation. The multiplication is done with care to prevent overflow of 16-bit integers.
-
-```forth
-: 16bit-multiply ( a b -- result )
-  SWAP 15 RSHIFT ( a>>15 b )
-  SWAP 15 LSHIFT ( a>>15 (b<<15) )
-  * 15 RSHIFT ;  \ ((a>>15)*(b<<15))>>15
 ```
+// 3D Vector Rotation using Fixed-point Arithmetic
+// Uses 8.8 fixed point format for angles
+// Variables:
+// v = input vector array [x,y,z]
+// m = rotation matrix array [9 elements]
+// r = result vector array
+// t = temporary calculations
+// a = angle
+// s = sin/cos lookup array
 
-### Memory Allocation (`CREATE`)
-Memory space is allocated for the 3D vector and the 3x3 matrix using the `CREATE` word followed by `,` to initialize the values to zero.
+// Initialize sin/cos lookup table (0-90 degrees in 8.8 format)
+:I [ 0 36 71 107 142 176 211 244 278 310 342 373 404 434 462
+     490 517 543 568 592 615 637 658 678 696 714 731 746 760
+     773 784 794 803 810 816 821 824 826 827 826 824 ] s! ;
 
-```forth
-CREATE vector 0 , 0 , 0 ,
-CREATE matrix 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
-```
+// Get sine from lookup (angle in 8.8 format)
+:S a! // angle input
+   a #FF & // Get fraction
+   a 8 } // Get degree
+   s + ? // Lookup value
+   a #100 >= ( // If angle > 90
+     ~ // Negate if needed
+   ) ;
 
-### Element Access (`ele` and `v-ele`)
-The word `ele` calculates the memory address for a given element in the matrix based on its index, while `v-ele` does the same for the vector.
+// Get cosine (angle + 90 degrees)
+:C a #100 + S ;
 
-```forth
-: ele ( idx -- addr )
-  2* matrix + ;
+// Fixed point multiply
+:M " * 8 } ; // a b -- result
 
-: v-ele ( idx -- addr )
-  2* vector + ;
-```
+// Initialize 3x3 rotation matrix for X rotation
+:X a! // angle input
+   a S a C    0 m! m! m! // Row 1
+   a ~ C a S  0 m! m! m! // Row 2
+   0 0 #100   m! m! m! ; // Row 3
 
-### Matrix-Vector Multiplication (`*v`)
-The `*v` word performs the matrix-vector multiplication. It loops through each row and column of the matrix, multiplies the corresponding elements with those of the vector, sums them up, and stores the result back in the vector.
+// Initialize 3x3 rotation matrix for Y rotation
+:Y a! // angle input
+   a C 0 a ~ S m! m! m! // Row 1
+   0 #100 0   m! m! m! // Row 2
+   a S 0 a C  m! m! m! ; // Row 3
 
-```forth
-: *v ( -- )
-  0
-  0 DO
-    0 DO
-      I 3 * J + ele @
-      J v-ele @
-      16bit-multiply +
-    3 0 DO LOOP
-    I v-ele !
-  3 0 DO LOOP ;
-```
+// Initialize 3x3 rotation matrix for Z rotation
+:Z a! // angle input
+   a C a ~ S 0 m! m! m! // Row 1
+   a S a C 0  m! m! m! // Row 2
+   0 0 #100   m! m! m! ; // Row 3
 
-### Initialization and Example (`init-data`)
-The `init-data` word initializes the matrix and vector with some sample fixed-point values.
+// Matrix multiply vector
+:V [ 0 0 0 ] r! // Initialize result
+   3 ( // For each row
+     0 t! // Clear accumulator
+     3 ( // For each column
+       m /i 3 * /j + ? // Get matrix element
+       v /j ? M // Multiply with vector element
+       t + t! // Add to accumulator
+     )
+     t r /i ?! // Store result
+   ) ;
 
-```forth
-: init-data ( -- )
-  ...
-```
+// Test program
+:T I // Initialize lookup tables
+   // Test vector [100,0,0]
+   [ #100 0 0 ] v!
+   // Rotate 45 degrees around Z axis
+   45 8 { Z // Convert 45 to 8.8 format
+   V // Perform rotation
+   // Display results
+   `Rotated vector:` /N
+   r 0 ? . r 1 ? . r 2 ? . ;
 
-### Example Usage
-The script concludes by demonstrating how to initialize the data and then perform the matrix-vector multiplication. The results are then displayed on the console.
-
-```forth
-init-data
-*v
-
-vector 2* @ . CR
-vector 2* 2 + @ . CR
-vector 2* 4 + @ . CR
-```
-
-The code has been revised to handle the issues you've outlined, including proper fixed-point arithmetic and 16-bit integer handling.
-
-## iterate
-
-## ref
-
+   ```
