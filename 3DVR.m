@@ -1,4 +1,4 @@
-% 3D Vector Rotation Test Suite
+% 3D Vector Rotation Test Suite - Fixed Version
 % Compares floating-point vs fixed-point implementations
 
 function test_3d_rotation()
@@ -32,109 +32,89 @@ end
 
 function result = rotate_fixed(vector, angle_deg)
     % Fixed-point implementation (8.8 format)
-    % Initialize lookup tables
-    sin_table = generate_sin_table();
+    SCALE = 256;  % 8.8 fixed point scale factor
     
-    % Convert angle to 8.8 fixed point
-    angle_fixed = round(angle_deg * 256 / 360 * 90);  % Scale to 90-degree range
+    % Scale input vector to fixed point
+    vector_fixed = round(vector * SCALE);
     
-    % Get sin/cos values from lookup
-    sin_val = get_sin_fixed(angle_fixed, sin_table);
-    cos_val = get_cos_fixed(angle_fixed, sin_table);
+    % Convert angle to fixed point (90 degrees = 64 in our format)
+    angle_fixed = round(angle_deg * 64 / 90);
+    
+    % Get sin/cos values
+    sin_val = get_sin_fixed(angle_fixed);
+    cos_val = get_cos_fixed(angle_fixed);
     
     % Create rotation matrix in fixed point
-    Rz = [cos_val -sin_val 0;
-          sin_val  cos_val 0;
-          0        0       256];  % 1.0 in 8.8 format
+    Rz = [cos_val, -sin_val, 0;
+          sin_val,  cos_val, 0;
+          0,        0,       SCALE];
     
-    % Perform matrix multiplication in fixed point
+    % Perform matrix multiplication maintaining fixed point
     result = zeros(3,1);
     for i = 1:3
         sum = 0;
         for j = 1:3
-            sum = sum + fixed_multiply(Rz(i,j), vector(j));
+            prod = fixed_multiply(Rz(i,j), vector_fixed(j));
+            sum = sum + prod;
         end
-        result(i) = sum;
+        % Convert back to floating point
+        result(i) = sum / SCALE;
     end
-    
-    % Convert back to floating point
-    result = result / 256;  % Scale back from 8.8 format
 end
 
 function result = fixed_multiply(a, b)
-    % Simulate 16-bit fixed-point multiplication
-    result = floor((a * b) / 256);
+    % Simulate 16-bit fixed-point multiplication with proper scaling
+    SCALE = 256;
+    result = floor((a * b) / SCALE);
     % Simulate 16-bit overflow
     result = mod(result + 32768, 65536) - 32768;
 end
 
-function sin_table = generate_sin_table()
-    % Generate sine lookup table (0-90 degrees in 8.8 format)
-    sin_table = zeros(91, 1);
-    for i = 0:90
-        sin_table(i+1) = round(sin(deg2rad(i)) * 256);
-    end
+function val = get_sin_fixed(angle)
+    % Get sine value in fixed point format (8.8)
+    % Input angle is in 64 units per 90 degrees
+    SCALE = 256;
+    
+    % Normalize angle to 0-255 range (0-360 degrees)
+    angle = mod(angle, 256);
+    
+    % Convert to radians for MATLAB's sin function
+    angle_rad = (angle * 2 * pi) / 256;
+    
+    % Convert to fixed point
+    val = round(sin(angle_rad) * SCALE);
 end
 
-function val = get_sin_fixed(angle_fixed, sin_table)
-    % Get sine value from lookup table
-    angle_deg = mod(angle_fixed * 360 / (256 * 90), 360);
-    if angle_deg <= 90
-        val = sin_table(floor(angle_deg) + 1);
-    elseif angle_deg <= 180
-        val = sin_table(91 - floor(angle_deg - 90));
-    elseif angle_deg <= 270
-        val = -sin_table(floor(angle_deg - 180) + 1);
-    else
-        val = -sin_table(91 - floor(angle_deg - 270));
-    end
+function val = get_cos_fixed(angle)
+    % Get cosine by shifting sine lookup by 64 units (90 degrees)
+    val = get_sin_fixed(angle + 64);
 end
 
-function val = get_cos_fixed(angle_fixed, sin_table)
-    % Get cosine by shifting sine lookup by 90 degrees
-    val = get_sin_fixed(angle_fixed + 64, sin_table);  % 64 = 90° in 8.8 format
-end
-
-% Extra test functions to validate implementation
-
-function test_fixed_point_accuracy()
-    % Test fixed-point accuracy at various angles
+% Test plotting function
+function plot_rotation_test()
+    % Create test vector
+    vector = [100; 0; 0];
+    
+    % Test multiple angles
     angles = 0:15:360;
-    max_error = 0;
-    
-    for angle = angles
-        vec = [100; 0; 0];
-        res_float = rotate_floating(vec, angle);
-        res_fixed = rotate_fixed(vec, angle);
-        error = max(abs(res_float - res_fixed));
-        max_error = max(max_error, error);
-        
-        fprintf('Angle: %d degrees, Max Error: %.4f\n', angle, error);
-    end
-    
-    fprintf('\nOverall maximum error: %.4f\n', max_error);
-end
-
-function plot_rotation_comparison()
-    % Visual comparison of floating vs fixed point
-    angles = 0:5:360;
-    results_float = zeros(length(angles), 2);
-    results_fixed = zeros(length(angles), 2);
-    vec = [100; 0; 0];
+    float_points = zeros(length(angles), 2);
+    fixed_points = zeros(length(angles), 2);
     
     for i = 1:length(angles)
-        res_float = rotate_floating(vec, angles(i));
-        res_fixed = rotate_fixed(vec, angles(i));
-        results_float(i,:) = res_float(1:2)';
-        results_fixed(i,:) = res_fixed(1:2)';
+        res_float = rotate_floating(vector, angles(i));
+        res_fixed = rotate_fixed(vector, angles(i));
+        float_points(i,:) = res_float(1:2)';
+        fixed_points(i,:) = res_fixed(1:2)';
     end
     
+    % Plot results
     figure;
-    plot(results_float(:,1), results_float(:,2), 'b-', 'LineWidth', 2);
+    plot(float_points(:,1), float_points(:,2), 'b-', 'LineWidth', 2);
     hold on;
-    plot(results_fixed(:,1), results_fixed(:,2), 'r--', 'LineWidth', 1);
-    legend('Floating Point', 'Fixed Point');
-    title('Rotation Comparison: Floating vs Fixed Point');
+    plot(fixed_points(:,1), fixed_points(:,2), 'r--', 'LineWidth', 1);
+    plot([0 vector(1)], [0 vector(2)], 'k-', 'LineWidth', 2);
+    legend('Floating Point', 'Fixed Point', 'Original Vector');
+    title('Vector Rotation Comparison');
     xlabel('X');
     ylabel('Y');
     grid on;
