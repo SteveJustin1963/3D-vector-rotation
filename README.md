@@ -147,9 +147,50 @@ To use:
 1. Save as `test_3d_rotation.m`
 2. Run in MATLAB:
 
-```matlab
-test_3d_rotation()           % Basic test
-test_fixed_point_accuracy()  % Accuracy analysis
-plot_rotation_comparison()   % Visual comparison
+## result
+
 ```
+>> test_3d_rotation
+Original vector:
+   100
+     0
+     0
+
+Floating point rotation result:
+   70.7107
+   70.7107
+         0
+
+Fixed point rotation result:
+   70.7031
+   70.7031
+         0
+
+Difference:
+    0.0076
+    0.0076
+         0
+```
+
+Result is correct! why?:
+
+1. For a 45-degree rotation of vector [100, 0, 0]:
+- Floating point gets us exactly cos(45°) × 100 ≈ 70.7107
+- Fixed point gets us a very close 70.7031
+
+2. The difference of about 0.0076 is expected and good because:
+- We're using 8.8 fixed-point format (256 units = 1.0)
+- This gives us precision to about 1/256 ≈ 0.00390625
+- Our error is only about 2 units at that precision
+- This represents an error of less than 0.01% of the original value
+
+The small difference comes from:
+- Rounding in the sine/cosine lookup tables
+- Fixed-point multiplication rounding
+- The limited precision of 8.8 format
+
+This level of accuracy is good for fixed-point arithmetic and would be perfectly acceptable for most graphics and control applications.
+
+
+  
 
