@@ -45,15 +45,16 @@ When rotating a 3D vector using fixed-point arithmetic, all vectors and matrices
 
 
 ```
-// 3D Vector Rotation using Fixed-point Arithmetic
-// Uses 8.8 fixed point format for angles
+// Complete 3D Vector Rotation System
+// Uses 8.8 fixed point format for calculations
 // Variables:
-// v = input vector array [x,y,z]
-// m = rotation matrix array [9 elements]
-// r = result vector array
+// a = input angle
 // t = temporary calculations
-// a = angle
-// s = sin/cos lookup array
+// v = input vector array
+// s = sin/cos lookup table
+// x,y,z = X rotation matrix rows
+// p,q,r = Y rotation matrix rows
+// u,v,w = Z rotation matrix rows
 
 // Initialize sin/cos lookup table (0-90 degrees in 8.8 format)
 :I [ 0 36 71 107 142 176 211 244 278 310 342 373 404 434 462
@@ -75,48 +76,94 @@ When rotating a 3D vector using fixed-point arithmetic, all vectors and matrices
 // Fixed point multiply
 :M " * 8 } ; // a b -- result
 
-// Initialize 3x3 rotation matrix for X rotation
+// Initialize 3x3 rotation matrix for X rotation - stored in x,y,z arrays
 :X a! // angle input
-   a S a C    0 m! m! m! // Row 1
-   a ~ C a S  0 m! m! m! // Row 2
-   0 0 #100   m! m! m! ; // Row 3
+   [a S a C 0] x! // Row 1 
+   [a ~ C a S 0] y! // Row 2
+   [0 0 #100] z! ; // Row 3
 
-// Initialize 3x3 rotation matrix for Y rotation
+// Initialize 3x3 rotation matrix for Y rotation - stored in p,q,r arrays
 :Y a! // angle input
-   a C 0 a ~ S m! m! m! // Row 1
-   0 #100 0   m! m! m! // Row 2
-   a S 0 a C  m! m! m! ; // Row 3
+   [a C 0 a ~ S] p! // Row 1
+   [0 #100 0] q! // Row 2
+   [a S 0 a C] r! ; // Row 3
 
-// Initialize 3x3 rotation matrix for Z rotation
+// Initialize 3x3 rotation matrix for Z rotation - stored in u,v,w arrays
 :Z a! // angle input
-   a C a ~ S 0 m! m! m! // Row 1
-   a S a C 0  m! m! m! // Row 2
-   0 0 #100   m! m! m! ; // Row 3
+   [a C a ~ S 0] u! // Row 1
+   [a S a C 0] v! // Row 2
+   [0 0 #100] w! ; // Row 3
 
-// Matrix multiply vector
-:V [ 0 0 0 ] r! // Initialize result
+// Generic matrix multiply vector (m1,m2,m3 are the matrix rows)
+:V [ 0 0 0 ] t! // Initialize result
    3 ( // For each row
-     0 t! // Clear accumulator
+     0 n! // Clear accumulator
      3 ( // For each column
-       m /i 3 * /j + ? // Get matrix element
+       /i /j ?M @ // Get matrix element from indicated row
        v /j ? M // Multiply with vector element
-       t + t! // Add to accumulator
+       n + n! // Add to accumulator
      )
-     t r /i ?! // Store result
+     n t /i ?! // Store result
    ) ;
+
+// Matrix multiply using X rotation
+:VX x y z V ;
+
+// Matrix multiply using Y rotation
+:VY p q r V ;
+
+// Matrix multiply using Z rotation
+:VZ u v w V ;
 
 // Test program
 :T I // Initialize lookup tables
    // Test vector [100,0,0]
    [ #100 0 0 ] v!
-   // Rotate 45 degrees around Z axis
-   45 8 { Z // Convert 45 to 8.8 format
-   V // Perform rotation
-   // Display results
-   `Rotated vector:` /N
-   r 0 ? . r 1 ? . r 2 ? . ;
+   
+   // Test X rotation 45 degrees
+   45 8 { X // Convert 45 to 8.8 format and create matrix
+   VX // Perform rotation
+   `X rotation:` /N
+   t 0 ? . t 1 ? . t 2 ? . /N
+   
+   // Test Y rotation 45 degrees
+   45 8 { Y // Create Y matrix
+   VY // Perform rotation
+   `Y rotation:` /N
+   t 0 ? . t 1 ? . t 2 ? . /N
+   
+   // Test Z rotation 45 degrees
+   45 8 { Z // Create Z matrix
+   VZ // Perform rotation
+   `Z rotation:` /N
+   t 0 ? . t 1 ? . t 2 ? . ;
 
-   ```
+```
+
+1. Separate storage for each rotation matrix (X,Y,Z)
+2. Single array store per matrix row
+3. Better variable organization
+4. Clearer matrix multiply logic
+5. Comprehensive test program
+
+To use:
+1. Run :I to initialize lookup tables
+2. Create a vector with [ x y z ] v!
+3. Use :X, :Y, or :Z to create rotation matrix
+4. Use :VX, :VY, or :VZ to apply rotation
+5. Result is in t array
+
+Example:
+```mint
+:R I                    // Initialize
+   [ #100 0 0 ] v!     // Set vector
+   45 8 { Z            // 45 degree Z rotation
+   VZ                  // Rotate
+   t 0 ? . t 1 ? . t 2 ? . ; // Show result
+```
+
+
+
 
 
 ## MATLAB version of the 3D vector rotation code that mirrors our MINT2 implementation.
